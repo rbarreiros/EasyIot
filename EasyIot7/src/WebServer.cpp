@@ -1,9 +1,6 @@
 #include "WebServer.h"
 #include <DNSServer.h>
 #include "constants.h"
-#include "StaticSite.h"
-#include "StaticCss.h"
-#include "StaticJs.h"
 #include "AsyncJson.h"
 #include "Switches.h"
 #include "Sensors.h"
@@ -157,7 +154,30 @@ AsyncJsonResponse *errorResponse(const char *cause)
 }
 void loadUI()
 {
+  server.serveStatic("/", LittleFS, "/", "max-age=600").setDefaultFile("index.html");
+
+  /*
+  server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
+#if WEB_SECURE_ON
+    if (!request->authenticate(getAtualConfig().apiUser, getAtualConfig().apiPassword))
+      return request->requestAuthentication(REALM);
+#endif
+    AsyncWebServerResponse *response = request->beginResponse(LittleFS, "/index.html.gz");
+    response->addHeader("Content-Type", "application/x-gzip");
+    response->addHeader("Content-Encoding", "gzip");
+   request->send(response);
+  });
+  */
+
+  server.onNotFound([](AsyncWebServerRequest *request) {
+#ifdef DEBUG
+      Log.error("%s Unable to find file %s in filesystem." CR, tags::config, request->url().c_str());
+#endif
+    request->send(404);
+  });
+
   //HTML
+  /*
   server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
 #if WEB_SECURE_ON
     if (!request->authenticate(getAtualConfig().apiUser, getAtualConfig().apiPassword))
@@ -166,7 +186,6 @@ void loadUI()
     AsyncWebServerResponse *response = request->beginResponse_P(200, "text/html", index_html, sizeof(index_html));
     response->addHeader("Content-Encoding", "gzip");
     response->addHeader("Cache-Control", "max-age=600");
-
     request->send(response);
   });
 
@@ -248,7 +267,9 @@ void loadUI()
     response->addHeader("Cache-Control", "max-age=600");
     request->send(response);
   });
+  */
 }
+
 void loadAPI()
 {
   server.on("/reboot", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -359,7 +380,7 @@ void loadAPI()
       }
     } });
 
-  server.on("/config", HTTP_GET, [](AsyncWebServerRequest *request) {
+  server.on("/load-config", HTTP_GET, [](AsyncWebServerRequest *request) {
 #if WEB_SECURE_ON
     if (!request->authenticate(getAtualConfig().apiUser, getAtualConfig().apiPassword))
       return request->requestAuthentication(REALM);

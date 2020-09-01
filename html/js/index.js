@@ -1,5 +1,5 @@
 const endpoint = {
-    baseUrl: "http://192.168.187.81"
+    baseUrl: ""
 };
 var source = null;
 
@@ -289,7 +289,7 @@ function showText(pt, en) {
 }
 
 function loadConfig() {
-    const targetUrl = endpoint.baseUrl + "/config";
+    const targetUrl = endpoint.baseUrl + "/load-config";
     $.ajax({
         url: targetUrl,
         contentType: "text/plain; charset=utf-8",
