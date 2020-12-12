@@ -4,7 +4,7 @@
 #include "Arduino.h"
 #include "ArduinoJson.h"
 #include "FS.h"
-static const String STATES_POLL[] = {constanstsSwitch::payloadOff, constanstsSwitch::payloadOn, constanstsSwitch::payloadStop, constanstsSwitch::payloadOpen, constanstsSwitch::payloadStop, constanstsSwitch::payloadClose, constanstsSwitch::payloadUnlock, constanstsSwitch::payloadLock};
+static const String STATES_POLL[] = {constanstsSwitch::payloadOff, constanstsSwitch::payloadOn, constanstsSwitch::payloadStop, constanstsSwitch::payloadOpen, constanstsSwitch::payloadStop, constanstsSwitch::payloadClose, constanstsSwitch::payloadOpen, constanstsSwitch::payloadClose};
 class Bounce;
 class Shutters;
 enum SwitchMode
@@ -67,6 +67,7 @@ struct SwitchT
     bool lastPrimaryGpioState = true;
     bool lastSecondaryGpioState = true;
     bool lastPrimaryStateGpioState = true;
+    bool lastSecondaryStateGpioState = true;
     Bounce *debouncerPrimary = nullptr;
     Bounce *debouncerSecondary = nullptr;
     int statePoolIdx = -1;
@@ -97,6 +98,7 @@ struct SwitchT
     void updateFromJson(JsonObject doc);
     const char *changeState(const char *state, const char *origin);
     const char *rotateState();
+    void toJson(JsonVariant &root) const;
     const char *getCurrentState() const;
     void configPins();
     const void notifyState(bool dirty);

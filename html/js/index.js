@@ -1,12 +1,10 @@
 const endpoint = {
-    baseUrl: "http://192.168.187.81"
+    baseUrl: ""
 };
 var source = null;
-
 function removeFromSelect(select, value) {
     $("#" + select + " option[value='" + value + "']").remove();
 }
-
 function addToSelect(select, class_, value) {
     let sel = document.getElementById(select);
     if (sel) {
@@ -16,23 +14,8 @@ function addToSelect(select, class_, value) {
         opt.value = value;
         sel.appendChild(opt);
         $("#" + select + " option[value='" + value + "']").addClass(class_);
-
     }
 }
-
-function requestUpdate() {
-    $.ajax({
-        url: endpoint.baseUrl + "/auto-update",
-        contentType: "text/plain; charset=utf-8",
-        success: function (response) {
-            showMessage("O Dispositivo vai iniciar a atualização automática, aguarde.", "The device started the auto upgrade.")
-        }, error: function () {
-            showMessage("Não foi possivel iniciar a atualização automárica, tenta novamente.", "Can't be possible to start auto update, retry again.")
-        },
-        timeout: 1000
-    });
-}
-
 function buildSwitchTemplate() {
     if ($('#bs_NEW').length > 0) return
     let device = {
@@ -105,13 +88,11 @@ var WORDS_EN = {
     "node": "NODE",
     "up": "Up",
     "down": "Down",
-    "lang-connectedOn": "CONNECTED ON",
     "reading-interval": "Readings every",
     "sensors": "Sensors",
     "integrations": "INTEGRATIONS",
     "update": "UPDATE",
     "features": "FEATURES",
-    "memory-free": "HEAP",
     "current-version": "Current version",
     "new-file": "Choose new version file",
     "install-new-version": "Auto Upgrade to version",
@@ -137,7 +118,7 @@ var WORDS_EN = {
     "switch": "Switch",
     "light": "Light",
     "cover": "Cover",
-    "lock": "Lock",
+    "garage": "Garage",
     "released": "Released",
     "disconnected": "disconnected",
     "dconnected": "connected",
@@ -161,8 +142,6 @@ var WORDS_EN = {
     "on": "On",
     "auto-state": "Auto State",
     "off": "Off",
-    "locked": "Lock",
-    "unlock": "Unlocked",
     "open": "Open",
     "close": "Closed",
     "mqtt": "MQTT",
@@ -180,14 +159,13 @@ var WORDS_EN = {
 };
 var WORDS_PT = {
     "gate":"Portão",
-    "pin-state-a":"Pino Estadp A",
+    "pin-state-a":"Pino Estado A",
     "pin-state-b":"Pino Estado B",
     "pin-out-3": "Pino saída c",
     "update-from-server": "NOVA ATUALIZAÇÃO",
     "node": "NÓ",
     "up": "Subida",
     "down": "Descida",
-    "lang-connectedOn": "LIGADO A",
     "group": "Grupo",
     "integrations": "INTEGRAÇÕES",
     "sensors": "Sensores",
@@ -202,7 +180,6 @@ var WORDS_PT = {
     "install-file-version": "Instalar versão do ficheiro",
     "version": "Versão",
     "save": "Guardar",
-    "memory-free": "HEAP",
     "choose": "escolher",
     "auto-state": "Estádo automático",
     "clean-fields": "Limpar todos os campos",
@@ -226,7 +203,7 @@ var WORDS_PT = {
     "switch": "Interruptor",
     "light": "Luz",
     "cover": "Estore",
-    "lock": "Fechadura",
+    "garage": "Garagem",
     "normal": "Normal",
     "push": "Pressão",
     "dual-push": "Duplo Pressão",
@@ -246,8 +223,6 @@ var WORDS_PT = {
     "state": "Estado",
     "on": "Ligado",
     "off": "Desligado",
-    "locked": "Trancado",
-    "unlock": "Destrancado",
     "open": "Aberto",
     "close": "Fechado",
     "stop": "Parar",
@@ -333,9 +308,8 @@ function fillConfig() {
     $("#version_lbl").text(config.firmware);
     $("#lbl-chip").text(config.chipId);
     $("#lbl-mac").text(config.mac);
-    $("#lbl-connectedOn").text(config.connectedOn);
     $('input[name="nodeId"]').val(config.nodeId);
-    $(document).prop('title', 'BH EASY IoT ' + config.nodeId);
+    $(document).prop('title', 'BH OnOfre ' + config.nodeId);
     $('input[name="mqttIpDns"]').val(config.mqttIpDns);
     $('#mqtt_lbl').text(config.mqttIpDns);
     $('input[name="mqttUsername"]').val(config.mqttUsername);
@@ -356,7 +330,6 @@ function fillConfig() {
     $('input[name="emoncmsServer"]').val(config.emoncmsServer);
     $('input[name="emoncmsPath"]').val(config.emoncmsPath);
     $('input[name="emoncmsApikey"]').val(config.emoncmsApikey);
-    getLastVersion(config.firmwareMode, config.firmware, config.chipId);
     $('#ff').prop('disabled', false);
 
 }
@@ -416,8 +389,6 @@ function applySwitchFamily(id) {
     removeFromSelect('autoStateValue_' + id, "STOP");
     removeFromSelect('autoStateValue_' + id, "ON");
     removeFromSelect('autoStateValue_' + id, "OFF");
-    removeFromSelect('autoStateValue_' + id, "UNLOCK");
-    removeFromSelect('autoStateValue_' + id, "LOCK");
     if ($('#family_' + id).val() == "cover") {
         show("btn_close_" + id);
         show("btn_stop_" + id);
@@ -432,7 +403,7 @@ function applySwitchFamily(id) {
         addToSelect('autoStateValue_' + id, "lang-open", "OPEN");
         addToSelect('autoStateValue_' + id, "lang-close", "CLOSE");
         addToSelect('autoStateValue_' + id, "lang-stop", "STOP");
-    } else if ($('#family_' + id).val() == "lock") {
+    } else if ($('#family_' + id).val() == "garage") {
         show("btn_on_" + id);
         addToSelect('mode_' + id, "lang-push", 2);
         addToSelect('mode_' + id, "lang-gate", 6);
@@ -467,7 +438,7 @@ function applySwitchMode(id) {
             show("secondaryGpioRow_" + id)
         }
         show("secondaryGpioControlRow_" + id)
-    }else   if ($('#family_' + id).val() == "lock") {
+    }else   if ($('#family_' + id).val() == "gate") {
         show("secondaryGpioControlRow_" + id)
     }
     loadsLanguage(localStorage.getItem('lang'));
@@ -696,7 +667,7 @@ function buildSwitch(obj) {
         '                                    <option class="lang-switch" value="switch">Interruptor</option>' +
         '                                    <option class="lang-light" value="light">Luz</option>' +
         '                                    <option class="lang-cover" value="cover">Estore</option>' +
-        '                                    <option class="lang-lock" value="lock">Fechadura</option>' +
+        '                                    <option class="lang-garage" value="garage">Garagem</option>' +
         '                                </select></td>' +
         '                            </tr>' +
         '                            <tr>' +
@@ -759,11 +730,11 @@ function buildSwitch(obj) {
         '                            </tr>' +
         '                            <tr>' +
         '                                <td><span class="label-device-indent"><span class="lang-command">Comando</span></span></td>' +
-        '                                <td> <span style="word-break: break-word" >' + obj.mqttCommandTopic + '</span></td>' +
+        '                                <td> <span style="word-break: break-word" >%u/%c' + obj.family +'/' + obj.id + '/set </span></td>' +
         '                            </tr>' +
         '                            <tr>' +
         '                                <td><span class="label-device-indent"><span class="lang-state">Estado</span></span></td>' +
-        '                                <td><span  style="word-break: break-word">' + obj.mqttStateTopic + '</span></td>' +
+        '                                <td><span  style="word-break: break-word">%u/%c' + obj.family +'/' + obj.id + '/status</span></td>' +
         '                            </tr>' +
         '                            <tr>' +
         '                                <td><span class="label-device" style="color: dodgerblue; font-size: 13px;">KNX</span></td>' +
@@ -858,9 +829,6 @@ function stateSwitch(id, state) {
     let toggleState = state;
     if ((toggleState === "ON" || toggleState === "OFF") && ($("#btn_on_" + id).hasClass("ON") || $("#btn_on_" + id).hasClass("OFF"))) {
         toggleState = $("#btn_on_" + id).hasClass("ON") ? "OFF" : "ON";
-    }
-    if (toggleState === "RELEASED") {
-        toggleState = "LOCK";
     }
     const targetUrl = endpoint.baseUrl + "/state-switch?state=" + toggleState + "&id=" + id;
     $.ajax({
@@ -1096,24 +1064,6 @@ function reboot() {
     });
 }
 
-function getLastVersion(firmwareMode, currentVersion, chipId) {
-    $.ajax({
-        url: "http://easyiot.bhonofre.pt/firmware/latest-version?firmwareMode=" + firmwareMode + "&chipId=" + chipId + "&currentVersion=" + currentVersion,
-        contentType: "text/plain; charset=utf-8",
-        success: function (response) {
-            if (response <= currentVersion) {
-                $("#box-auto-update").addClass('hide');
-            } else {
-                $("#box-auto-update").removeClass('hide');
-                $("#lbl-lastversion").text(response);
-            }
-        }, error: function () {
-            $("#box-auto-update").addClass('hide');
-        },
-        timeout: 1000
-    });
-}
-
 function loadDefaults() {
     $.ajax({
         url: endpoint.baseUrl + "/load-defaults",
@@ -1144,12 +1094,11 @@ function systemStatus() {
             if (config) {
                 $('#mqtt_lbl').text(config.mqttIpDns);
             }
-            if (response.mqttConnected) {
+            if (response.mqtt) {
                 $('#mqtt-state').text(showText("ligado", "connected"));
             } else {
                 $('#mqtt-state').text(showText("desligado", "disconnected"));
             }
-            $('#lbl-heap').text((parseFloat(response.freeHeap / 1024).toFixed(2)).toString().concat(" KiB"));
             $('#wifi-signal').text(percentage + "%");
         }, error: function () {
             $('#wifi-signal').text("0%");
@@ -1157,7 +1106,6 @@ function systemStatus() {
         timeout: 1000
     });
 }
-
 
 $(document).ready(function () {
     let lang = localStorage.getItem('lang');
